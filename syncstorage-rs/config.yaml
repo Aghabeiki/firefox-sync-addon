@@ -1,6 +1,6 @@
 ---
 name: Syncstorage-rs
-version: "0.1.0"
+version: "0.1.1"
 slug: syncstorage_rs
 description: Self-hosted Firefox Sync server (Rust implementation, MariaDB-backed)
 url: "https://github.com/Aghabeiki/firefox-sync-addon"

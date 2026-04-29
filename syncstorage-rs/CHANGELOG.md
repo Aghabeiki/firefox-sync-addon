@@ -4,6 +4,13 @@ All notable changes to this add-on are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.1.1 — Friendlier MariaDB-not-running error
+
+- Pre-flight check: detect when the `mysql` service binding is unavailable
+  (typical cause: official MariaDB add-on is installed but not started) and
+  print an actionable message pointing at the fix instead of letting bashio's
+  cryptic `Service not enabled` line surface.
+
 ## 0.1.0 — Initial release
 
 - Pinned upstream `mozilla-services/syncstorage-rs` at tag **`0.22.3`**.

@@ -11,7 +11,21 @@ set -euo pipefail
 
 # ---------------------------------------------------------------------------
 # Pull MariaDB credentials injected by the Supervisor (mysql service).
+#
+# bashio::services.available returns 1 if the mysql service binding is not
+# published. That happens when the official MariaDB add-on is installed but
+# not started, or not installed at all. Print an actionable message rather
+# than letting bashio's generic "Service not enabled" error surface.
 # ---------------------------------------------------------------------------
+if ! bashio::services.available "mysql"; then
+    bashio::log.fatal "The 'mysql' service binding is not available."
+    bashio::log.fatal ""
+    bashio::log.fatal "This add-on depends on the official MariaDB add-on."
+    bashio::log.fatal "Install it from the add-on store and START it before"
+    bashio::log.fatal "starting this add-on. Default configuration is fine."
+    bashio::exit.nok "MariaDB add-on is not running"
+fi
+
 DB_HOST=$(bashio::services "mysql" "host")
 DB_PORT=$(bashio::services "mysql" "port")
 DB_USER=$(bashio::services "mysql" "username")
