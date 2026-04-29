@@ -22,7 +22,15 @@ jobs:
           # DL3008 (apt version pinning) is impractical to satisfy here:
           # transitive system deps span two Debian architectures and two
           # base images. Upstream syncstorage-rs does not pin them either.
-          ignore: DL3008
+          #
+          # DL3006 (always tag image version) fires on `FROM ${RUST_IMAGE}`
+          # and `FROM ${BUILD_FROM}`. Both ARGs default to fully tagged
+          # values; hadolint cannot follow ARG substitution. The CI build
+          # job overrides these ARGs with explicit tags too, so the
+          # untagged-pull risk is non-existent.
+          ignore: |
+            DL3008
+            DL3006
 
   shellcheck:
     name: shellcheck
