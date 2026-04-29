@@ -1,0 +1,21 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 140
+    level: warning
+  document-start:
+    present: true
+  truthy:
+    # GitHub Actions uses `on:` keys which yamllint flags as truthy.
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+ignore: |
+  .github/

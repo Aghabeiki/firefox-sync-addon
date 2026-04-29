@@ -1,0 +1,38 @@
+---
+name: Syncstorage-rs
+version: "0.1.0"
+slug: syncstorage_rs
+description: Self-hosted Firefox Sync server (Rust implementation, MariaDB-backed)
+url: "https://github.com/Aghabeiki/firefox-sync-addon"
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: services
+boot: auto
+host_network: false
+ports:
+  8000/tcp: 8000
+ports_description:
+  8000/tcp: Sync API (place behind an HTTPS reverse proxy)
+services:
+  - mysql:need
+options:
+  master_secret: ""
+  public_url: ""
+  fxa_oauth_server_url: "https://oauth.accounts.firefox.com"
+  fxa_email_domain: "api.accounts.firefox.com"
+  enable_quota: false
+  max_total_records: 1666
+  log_level: info
+  human_logs: true
+schema:
+  master_secret: password
+  public_url: url
+  fxa_oauth_server_url: url
+  fxa_email_domain: str
+  enable_quota: bool
+  max_total_records: int(100,)
+  log_level: list(trace|debug|info|warn|error)
+  human_logs: bool
+image: "ghcr.io/aghabeiki/{arch}-firefox-sync-addon"

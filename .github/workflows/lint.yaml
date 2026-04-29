@@ -1,0 +1,48 @@
+---
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hadolint:
+    name: hadolint (Dockerfile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: syncstorage-rs/Dockerfile
+          # DL3008 (apt version pinning) is impractical to satisfy here:
+          # transitive system deps span two Debian architectures and two
+          # base images. Upstream syncstorage-rs does not pin them either.
+          ignore: DL3008
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ludeeus/action-shellcheck@master
+        env:
+          # run.sh uses bashio's `with-contenv` shebang; tell shellcheck to
+          # treat it as bash.
+          SHELLCHECK_OPTS: "--shell=bash --external-sources"
+        with:
+          scandir: "."
+          additional_files: "syncstorage-rs/run.sh"
+
+  yamllint:
+    name: yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ibiqlik/action-yamllint@v3
+        with:
+          config_file: .yamllint.yaml

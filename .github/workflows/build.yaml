@@ -1,0 +1,116 @@
+---
+name: Build and publish add-on images
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing add-on version to (re)build, e.g. 0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: amd64
+            platform: linux/amd64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version from tag or input
+        id: version
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.tag }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Building add-on version: ${VERSION}"
+
+      - name: Verify config.yaml version matches the tag
+        run: |
+          CONFIG_VERSION=$(awk '/^version:/ {gsub(/"/, "", $2); print $2; exit}' \
+            syncstorage-rs/config.yaml)
+          if [[ "${CONFIG_VERSION}" != "${{ steps.version.outputs.version }}" ]]; then
+            echo "::error::config.yaml version (${CONFIG_VERSION}) does not match \
+            tag/input version (${{ steps.version.outputs.version }})"
+            exit 1
+          fi
+
+      - name: Verify CHANGELOG.md mentions this version
+        run: |
+          if ! grep -q "## ${{ steps.version.outputs.version }}" \
+              syncstorage-rs/CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no entry for \
+            ${{ steps.version.outputs.version }}"
+            exit 1
+          fi
+
+      - name: Read SYNCSTORAGE_REF and base image from build.yaml
+        id: build_args
+        run: |
+          REF=$(awk '/SYNCSTORAGE_REF:/ {gsub(/"/, "", $2); print $2; exit}' \
+            syncstorage-rs/build.yaml)
+          RUST_IMAGE=$(awk '/RUST_IMAGE:/ {gsub(/"/, "", $2); print $2; exit}' \
+            syncstorage-rs/build.yaml)
+          BUILD_FROM="ghcr.io/home-assistant/${{ matrix.arch }}-base-debian:bookworm"
+          echo "syncstorage_ref=${REF}" >> "${GITHUB_OUTPUT}"
+          echo "rust_image=${RUST_IMAGE}" >> "${GITHUB_OUTPUT}"
+          echo "build_from=${BUILD_FROM}" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up QEMU (cross-arch builds)
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lower-case repository owner
+        id: owner
+        run: |
+          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" \
+            >> "${GITHUB_OUTPUT}"
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./syncstorage-rs
+          file: ./syncstorage-rs/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: true
+          sbom: true
+          build-args: |
+            BUILD_FROM=${{ steps.build_args.outputs.build_from }}
+            SYNCSTORAGE_REF=${{ steps.build_args.outputs.syncstorage_ref }}
+            RUST_IMAGE=${{ steps.build_args.outputs.rust_image }}
+          tags: |
+            ghcr.io/${{ steps.owner.outputs.owner }}/${{ matrix.arch }}-firefox-sync-addon:${{ steps.version.outputs.version }}
+            ghcr.io/${{ steps.owner.outputs.owner }}/${{ matrix.arch }}-firefox-sync-addon:latest
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}

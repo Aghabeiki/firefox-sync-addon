@@ -1,0 +1,33 @@
+# Build artefacts
+target/
+*.tar.gz
+*.tar.zst
+*.tar
+*.tgz
+
+# Local secrets / env
+.env
+.env.*
+!.env.example
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Poetry / Python (kept in case anyone runs upstream tooling locally)
+.venv/
+__pycache__/
+*.pyc
+
+# Defensive: never commit node_modules even if a tool drags it in
+node_modules/
