@@ -42,7 +42,7 @@ jobs:
           SHELLCHECK_OPTS: "--shell=bash --external-sources"
         with:
           scandir: "."
-          additional_files: "syncstorage-rs/run.sh"
+          additional_files: "syncstorage-rs/run.sh scripts/healthcheck.sh"
 
   yamllint:
     name: yamllint

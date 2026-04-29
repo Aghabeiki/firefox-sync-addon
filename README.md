@@ -135,7 +135,15 @@ Sanity-check from any machine that can reach the proxy:
 curl -fsS https://sync.example.com/__heartbeat__
 ```
 
-Expect HTTP 200 and a small JSON object.
+Expect HTTP 200 and a small JSON object with `"status":"Ok"` and
+`"database":"Ok"`. For a more thorough probe, use the bundled script:
+
+```sh
+./scripts/healthcheck.sh https://sync.example.com
+```
+
+It runs all three health endpoints, parses the heartbeat JSON, and prints a
+green/red verdict.
 
 ### 8. Point Firefox at your server
 
